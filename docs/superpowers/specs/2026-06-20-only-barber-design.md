@@ -1,7 +1,7 @@
 # Only Barber — Especificação de Design do MVP
 
 Data: 20 de junho de 2026  
-Status: aprovado em conversa, aguardando revisão do documento escrito
+Status: aprovado
 
 ## 1. Objetivo
 
@@ -124,19 +124,27 @@ As entidades centrais serão:
 
 Cada usuário será relacionado ao `uid` do Firebase. Valores monetários serão armazenados em centavos. Pedidos terão estados explícitos, e eventos de webhook terão identificadores únicos para impedir processamento duplicado.
 
+Operações que alteram estado exigirão o cabeçalho `Idempotency-Key`. A API armazenará a chave, o usuário, a operação, o hash do payload e o resultado por uma janela definida. Repetições com a mesma chave e payload retornarão o resultado original; reutilização da chave com payload diferente será rejeitada. Restrições únicas no banco complementarão essa proteção nos fluxos financeiros.
+
 ## 7. Fluxos críticos
 
 ### 7.1 Autenticação
 
-O Firebase autentica o usuário e emite um ID token. O aplicativo envia o token à API. O backend valida assinatura, emissor e validade usando Firebase Admin, localiza ou cria o perfil correspondente e aplica autorização por função.
+O Firebase autentica o usuário e emite um ID token. O aplicativo envia o token à API. O backend valida criptograficamente assinatura, emissor, audiência, expiração (`exp`) e revogação usando Firebase Admin, localiza ou cria o perfil correspondente e aplica autorização por função.
+
+A autorização ocorrerá na entrada da API e será reforçada no serviço responsável pelo recurso. Toda operação por identificador também verificará propriedade: um instrutor nunca poderá consultar ou alterar curso, aula, arquivo ou dado financeiro pertencente a outro instrutor.
 
 ### 7.2 Upload
 
-A API verifica a permissão e gera uma URL temporária para upload no Supabase Storage. Após o envio, o aplicativo confirma o identificador do arquivo. O backend associa o arquivo ao curso sem expor credenciais privilegiadas.
+A API verifica permissão, propriedade, tipo e tamanho do arquivo antes de gerar uma URL assinada e temporária para o Supabase Storage. As URLs terão o menor tempo de vida compatível com o upload ou download e não serão reutilizáveis como autorização permanente. Após o envio, o aplicativo confirma o identificador do arquivo. O backend valida o objeto e o associa ao curso sem expor credenciais privilegiadas.
+
+Os buckets terão RLS ativa e serão privados por padrão. Políticas limitarão acesso ao dono do conteúdo, alunos matriculados e administradores autorizados. Vazamento de uma URL expirada não concederá acesso ao bucket nem a outros objetos.
 
 ### 7.3 Compra
 
-A API obtém o preço vigente do banco e cria uma sessão de checkout. A matrícula não é liberada pelo retorno do navegador. Um webhook Stripe assinado confirma o pagamento, registra a venda de forma idempotente e libera o acesso.
+A API obtém o preço vigente do banco e cria uma sessão de checkout usando a `Idempotency-Key` também na chamada ao Stripe. A mesma intenção de compra não poderá criar duas cobranças. A matrícula não é liberada pelo retorno do navegador. Um webhook Stripe assinado confirma o pagamento, registra a venda de forma idempotente e libera o acesso.
+
+Cada `event_id` do Stripe será persistido com restrição única antes da aplicação dos efeitos financeiros. Eventos repetidos retornarão sucesso sem executar novamente a venda, a matrícula ou a divisão de receita. O pedido e a sessão de checkout também terão restrições únicas que impeçam dupla liquidação.
 
 ### 7.4 Divisão de receita
 
@@ -158,32 +166,51 @@ O instrutor salva rascunhos livremente. Para enviar à revisão, o curso precisa
 - formulários manterão conteúdo após falhas recuperáveis;
 - uploads exibirão progresso, sucesso, falha e nova tentativa;
 - telas terão estados de carregamento, vazio, erro e conteúdo;
+- listas vazias terão mensagens contextuais, como “Nenhum curso encontrado”, com uma próxima ação útil;
 - ações destrutivas pedirão confirmação;
-- respostas da API usarão um formato de erro consistente;
+- respostas da API usarão um formato de erro consistente com `error_code` estável, mensagem em português, identificador da requisição e detalhes seguros de validação;
+- o aplicativo decidirá quando exibir nova tentativa, autenticar novamente ou corrigir campos a partir do `error_code`, sem interpretar textos livres;
 - logs do servidor terão contexto e identificador de requisição, sem tokens ou segredos.
 
 ## 9. Segurança
 
 - segredos apenas em variáveis de ambiente do servidor;
 - validação de token Firebase em rotas protegidas;
-- autorização por propriedade e função em cada operação;
+- validação explícita de assinatura, emissor, audiência, expiração e revogação do token Firebase;
+- autorização por propriedade e função na raiz da API e no serviço de domínio;
 - validação compartilhada de payloads;
 - preços e comissões recalculados no servidor;
 - verificação da assinatura dos webhooks Stripe;
-- idempotência em pagamentos;
-- URLs temporárias para arquivos privados;
+- `Idempotency-Key` obrigatória em toda ação que altera estado;
+- idempotência em checkout, pedidos e webhooks, reforçada por restrições únicas no banco;
+- URLs assinadas de curta duração para arquivos privados;
+- RLS ativa nos buckets do Supabase Storage;
 - limites de tamanho e tipo nos uploads;
-- rate limiting nas rotas de autenticação indireta, comunidade e checkout;
+- rate limiting combinado por usuário autenticado e por IP, com limites mais rígidos em checkout, uploads e comunidade;
+- limites de emergência globais e resposta `429` com tempo seguro para nova tentativa;
 - CORS restrito por ambiente;
 - nenhuma senha ou informação de cartão armazenada pelo Only Barber.
+
+## 9.1 Exclusão de conta e saldo pendente
+
+O pedido de exclusão iniciará um período de carência de 42 horas, dentro da faixa solicitada de 24 a 42 horas. Durante esse período, a conta ficará marcada como `deletion_pending`, com `deleted_at` agendado, e o usuário poderá cancelar o pedido ou apresentar contestação. A sessão será revogada e operações sensíveis ficarão bloqueadas.
+
+Ao fim do prazo, dados pessoais não sujeitos a obrigação de retenção serão anonimizados ou eliminados. Registros financeiros, antifraude, fiscais e de auditoria serão preservados apenas pelo prazo e finalidade legal aplicáveis, com acesso restrito. A exclusão lógica não será usada para manter dados pessoais indefinidamente.
+
+Uma conta com saldo de instrutor, reembolso pendente, disputa, chargeback ou saque em processamento não será concluída silenciosamente. O saldo ficará segregado e o usuário receberá um fluxo para saque ou resolução. Valores não serão apropriados automaticamente pela Only Barber. Qualquer tratamento futuro de saldo abandonado dependerá de termos transparentes e revisão jurídica e contábil específica antes de entrar em produção.
 
 ## 10. Qualidade e testes
 
 O desenvolvimento seguirá testes antes da implementação para regras novas. A validação da entrega incluirá:
 
 - testes unitários de autorização, publicação, progresso e divisão de receita;
+- testes de reutilização e conflito de `Idempotency-Key`;
 - testes de integração da API com banco de teste;
-- teste do webhook Stripe duplicado e inválido;
+- testes do webhook Stripe duplicado, fora de ordem, inválido e concorrente;
+- testes de token expirado, assinatura inválida, audiência incorreta e token revogado;
+- testes de isolamento entre instrutores e das políticas RLS do Storage;
+- testes de rate limit por usuário e por IP;
+- testes do período de exclusão, cancelamento e bloqueio por saldo pendente;
 - testes de componentes e navegação dos fluxos críticos;
 - verificação de tipos e lint;
 - build da aplicação Web;
@@ -217,5 +244,8 @@ A entrega será considerada pronta quando:
 6. o Studio exibir métricas coerentes com pedidos e matrículas existentes;
 7. os fluxos principais funcionarem em layout mobile e desktop;
 8. nenhuma rota financeira ou administrativa confiar em valores ou permissões vindos do cliente;
-9. testes, tipos, lint e build Web concluírem sem erros.
-
+9. uma compra repetida com a mesma chave não gerar cobrança, pedido, matrícula ou comissão duplicados;
+10. URLs expiradas não concederem acesso e as políticas RLS isolarem arquivos por permissão;
+11. rate limits por usuário e IP protegerem rotas críticas sem bloquear o uso normal;
+12. exclusões respeitarem a carência de 42 horas e não confiscarem saldo pendente;
+13. testes, tipos, lint e build Web concluírem sem erros.
