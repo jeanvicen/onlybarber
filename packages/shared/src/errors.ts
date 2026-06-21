@@ -10,6 +10,7 @@ export const errorCodeSchema = z.enum([
   "RATE_LIMITED",
   "NOT_FOUND",
   "BALANCE_PENDING",
+  "WEBHOOK_INVALID",
   "INTERNAL_ERROR",
 ]);
 
