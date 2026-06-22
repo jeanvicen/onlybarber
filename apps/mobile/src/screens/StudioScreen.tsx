@@ -6,7 +6,7 @@ import { radius, spacing } from "../theme/spacing";
 const metrics = [["Receita no mês", "R$ 12.480", "+18%"], ["Alunos ativos", "1.284", "+96"], ["Avaliação média", "4,9", "★"], ["Conclusão", "76%", "+4%"]];
 const courses = [["Degradê americano completo", "PUBLICADO", "642 alunos", "R$ 8.930"], ["Barba premium e visagismo", "EM REVISÃO", "—", "—"], ["Gestão de barbearia", "RASCUNHO", "3 de 8 aulas", "—"]];
 
-export function StudioScreen() {
+export function StudioScreen({ onCreateCourse }: { onCreateCourse?: () => void }) {
   const { width } = useWindowDimensions();
   const desktop = width >= 900;
   return (
@@ -14,7 +14,7 @@ export function StudioScreen() {
       <View style={styles.top}><BrandMark compact /><View style={styles.instructor}><View style={styles.dot} /><Text style={styles.instructorText}>Perfil verificado</Text></View></View>
       <View style={[styles.heading, !desktop && styles.headingMobile]}>
         <View><Text style={styles.eyebrow}>PAINEL PROFISSIONAL</Text><Text style={styles.title}>Studio do instrutor</Text><Text style={styles.subtitle}>Acompanhe seu negócio e publique conhecimento.</Text></View>
-        <Pressable accessibilityRole="button" accessibilityLabel="Criar novo curso" style={styles.createButton}><Text style={styles.createText}>＋  CRIAR NOVO CURSO</Text></Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel="Criar novo curso" onPress={onCreateCourse} style={styles.createButton}><Text style={styles.createText}>＋  CRIAR NOVO CURSO</Text></Pressable>
       </View>
       <View style={styles.metrics}>
         {metrics.map(([label, value, change]) => <View key={label} style={[styles.metric, desktop && styles.metricDesktop]}><Text style={styles.metricLabel}>{label}</Text><Text style={styles.metricValue}>{value}</Text><Text style={styles.metricChange}>{change} este mês</Text></View>)}
