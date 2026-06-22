@@ -3,6 +3,9 @@
   "private": true,
   "workspaces": ["apps/*", "packages/*"],
   "scripts": {
+    "build:web": "npm exec --workspace @onlybarber/mobile expo export -- --platform web",
+    "preview:web": "node scripts/serve-build.mjs",
+    "test:preview": "node --test scripts/serve-build.test.mjs",
     "test": "npm run test --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present"
   },
