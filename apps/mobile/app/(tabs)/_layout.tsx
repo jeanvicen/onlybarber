@@ -2,7 +2,7 @@ import { Tabs } from "expo-router";
 import { StyleSheet, Text, useWindowDimensions } from "react-native";
 import { colors } from "../../src/theme/colors";
 
-const icons: Record<string, string> = { index: "⌂", search: "⌕", library: "▤", community: "♟", studio: "✦" };
+const icons: Record<string, string> = { home: "⌂", search: "⌕", library: "▤", community: "♟", studio: "✦" };
 
 export default function TabLayout() {
   const { width } = useWindowDimensions();
@@ -21,7 +21,7 @@ export default function TabLayout() {
       sceneStyle: { backgroundColor: colors.background },
       tabBarIcon: ({ color }) => <Text style={[styles.icon, { color }]}>{icons[route.name] ?? "•"}</Text>,
     })}>
-      <Tabs.Screen name="index" options={{ title: "Home" }} />
+      <Tabs.Screen name="home" options={{ title: "Home" }} />
       <Tabs.Screen name="search" options={{ title: "Buscar" }} />
       <Tabs.Screen name="library" options={{ title: "Cursos" }} />
       <Tabs.Screen name="community" options={{ title: "Comunidade" }} />

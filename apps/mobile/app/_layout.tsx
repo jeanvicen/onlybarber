@@ -10,6 +10,8 @@ export default function RootLayout() {
     <ThemeProvider value={onlyBarberTheme}>
       <StatusBar style="light" />
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background } }}>
+        <Stack.Screen name="index" />
+        <Stack.Screen name="login" />
         <Stack.Screen name="(tabs)" />
       </Stack>
     </ThemeProvider>
