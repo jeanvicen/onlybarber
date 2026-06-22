@@ -14,7 +14,7 @@ const categories = [
   ["✂", "Degradê"], ["♟", "Barba"], ["◐", "Coloração"], ["⌁", "Navalha"], ["▣", "Gestão"],
 ];
 
-export function HomeScreen() {
+export function HomeScreen({ onOpenCourse }: { onOpenCourse?: () => void }) {
   const { width } = useWindowDimensions();
   const desktop = width >= 900;
   return (
@@ -52,11 +52,11 @@ export function HomeScreen() {
       <View style={styles.sectionHeader}><View><Text style={styles.sectionTitle}>Cursos em destaque</Text><Text style={styles.sectionSub}>Os favoritos da comunidade</Text></View><Text style={styles.seeAll}>Ver todos →</Text></View>
       {desktop ? (
         <View style={styles.courseGrid}>
-          {courses.map((course) => <CourseCard key={course.title} course={course} wide />)}
+          {courses.map((course) => <CourseCard key={course.title} course={course} wide onPress={onOpenCourse} />)}
         </View>
       ) : (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.courseGridMobile}>
-          {courses.map((course) => <CourseCard key={course.title} course={course} />)}
+          {courses.map((course) => <CourseCard key={course.title} course={course} onPress={onOpenCourse} />)}
         </ScrollView>
       )}
 

@@ -11,11 +11,12 @@ export type CourseCardData = {
   level: string;
 };
 
-export function CourseCard({ course, wide = false }: { course: CourseCardData; wide?: boolean }) {
+export function CourseCard({ course, wide = false, onPress }: { course: CourseCardData; wide?: boolean; onPress?: () => void }) {
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={`Abrir curso ${course.title}`}
+      onPress={onPress}
       style={({ pressed }) => [styles.card, wide && styles.wide, pressed && styles.pressed]}
     >
       <ImageBackground source={{ uri: course.image }} style={styles.image} imageStyle={styles.imageRadius}>
