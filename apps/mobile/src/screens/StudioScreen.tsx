@@ -4,9 +4,15 @@ import { colors } from "../theme/colors";
 import { radius, spacing } from "../theme/spacing";
 
 const metrics = [["Receita no mês", "R$ 12.480", "+18%"], ["Alunos ativos", "1.284", "+96"], ["Avaliação média", "4,9", "★"], ["Conclusão", "76%", "+4%"]];
-const courses = [["Degradê americano completo", "PUBLICADO", "642 alunos", "R$ 8.930"], ["Barba premium e visagismo", "EM REVISÃO", "—", "—"], ["Gestão de barbearia", "RASCUNHO", "3 de 8 aulas", "—"]];
+export type StudioCourse = { id: string; name: string; status: string; detail: string; revenue: string };
 
-export function StudioScreen({ onCreateCourse }: { onCreateCourse?: () => void }) {
+const courses: StudioCourse[] = [
+  { id: "course_1", name: "Degradê americano completo", status: "PUBLICADO", detail: "642 alunos", revenue: "R$ 8.930" },
+  { id: "course_2", name: "Barba premium e visagismo", status: "EM REVISÃO", detail: "—", revenue: "—" },
+  { id: "course_3", name: "Gestão de barbearia", status: "RASCUNHO", detail: "3 de 8 aulas", revenue: "—" },
+];
+
+export function StudioScreen({ onCreateCourse, additionalCourses = [] }: { onCreateCourse?: () => void; additionalCourses?: StudioCourse[] }) {
   const { width } = useWindowDimensions();
   const desktop = width >= 900;
   return (
@@ -21,8 +27,8 @@ export function StudioScreen({ onCreateCourse }: { onCreateCourse?: () => void }
       </View>
       <View style={styles.panel}>
         <View style={styles.panelHeader}><View><Text style={styles.panelTitle}>Seus cursos</Text><Text style={styles.panelSubtitle}>Conteúdo, desempenho e publicação</Text></View><Text style={styles.link}>Ver catálogo →</Text></View>
-        {courses.map(([name, status, detail, revenue], index) => (
-          <Pressable key={name} accessibilityRole="button" accessibilityLabel={`Gerenciar curso ${name}`} style={[styles.courseRow, index === courses.length - 1 && styles.courseRowLast]}>
+        {[...additionalCourses, ...courses].map(({ id, name, status, detail, revenue }, index, allCourses) => (
+          <Pressable key={id} accessibilityRole="button" accessibilityLabel={`Gerenciar curso ${name}`} style={[styles.courseRow, index === allCourses.length - 1 && styles.courseRowLast]}>
             <View style={styles.courseNumber}><Text style={styles.courseNumberText}>0{index + 1}</Text></View>
             <View style={styles.courseMain}><Text style={styles.courseName}>{name}</Text><Text style={styles.courseDetail}>{detail}</Text></View>
             <View style={styles.courseSide}><Text style={[styles.status, status === "PUBLICADO" && styles.statusLive]}>{status}</Text><Text style={styles.revenue}>{revenue}</Text></View>

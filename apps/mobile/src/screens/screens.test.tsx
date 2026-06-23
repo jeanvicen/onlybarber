@@ -12,9 +12,16 @@ describe("Only Barber screens", () => {
   });
 
   it("renders the instructor Studio metrics and course action", async () => {
-    await render(<StudioScreen />);
+    await render(<StudioScreen additionalCourses={[{
+      id: "demo_1",
+      name: "Curso criado nesta build",
+      status: "EM REVISÃO",
+      detail: "1 módulo · 3 aulas",
+      revenue: "—",
+    }]} />);
     expect(screen.getByText("Studio do instrutor")).toBeOnTheScreen();
     expect(screen.getByText("R$ 12.480")).toBeOnTheScreen();
     expect(screen.getByRole("button", { name: "Criar novo curso" })).toBeOnTheScreen();
+    expect(screen.getByText("Curso criado nesta build")).toBeOnTheScreen();
   });
 });

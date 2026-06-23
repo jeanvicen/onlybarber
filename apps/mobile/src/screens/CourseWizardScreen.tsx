@@ -5,10 +5,12 @@ import { radius, spacing } from "../theme/spacing";
 
 type Draft = { title: string; description: string; price: string };
 
-export function CourseWizardScreen({ onSubmit }: { onSubmit: (draft: Draft) => void }) {
+export function CourseWizardScreen({ onSubmit }: { onSubmit: (draft: Draft) => void | Promise<void> }) {
   const [step, setStep] = useState(1);
   const [draft, setDraft] = useState<Draft>({ title: "", description: "", price: "" });
   const [error, setError] = useState<string>();
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string>();
 
   function update(field: keyof Draft, value: string) { setDraft((current) => ({ ...current, [field]: value })); }
   function continueToContent() {
@@ -17,6 +19,19 @@ export function CourseWizardScreen({ onSubmit }: { onSubmit: (draft: Draft) => v
     const cents = Math.round(Number(draft.price.replace(",", ".")) * 100);
     if (!Number.isInteger(cents) || cents < 2990 || cents > 99900) { setError("Defina um preço entre R$ 29,90 e R$ 999,00."); return; }
     setError(undefined); setStep(2);
+  }
+
+  async function submitForReview() {
+    if (submitting) return;
+    setSubmitting(true);
+    setSubmitError(undefined);
+    try {
+      await onSubmit(draft);
+    } catch {
+      setSubmitError("Não foi possível salvar o curso. Tente novamente.");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -40,7 +55,7 @@ export function CourseWizardScreen({ onSubmit }: { onSubmit: (draft: Draft) => v
         <View style={styles.actions}><Pressable accessibilityRole="button" accessibilityLabel="Voltar para informações" onPress={() => setStep(1)} style={styles.outline}><Text style={styles.outlineText}>VOLTAR</Text></Pressable><Pressable accessibilityRole="button" accessibilityLabel="Revisar curso" onPress={() => setStep(3)} style={styles.primary}><Text style={styles.primaryText}>REVISAR CURSO  →</Text></Pressable></View>
       </View> : null}
 
-      {step === 3 ? <View style={styles.panel}><Text style={styles.panelTitle}>Pronto para revisão?</Text><Text style={styles.reviewTitle}>{draft.title}</Text><Text style={styles.panelCopy}>A equipe Only Barber verificará relevância, qualidade de áudio e vídeo e organização. Nenhum conteúdo é publicado automaticamente.</Text><View style={styles.reviewLine}><Text style={styles.reviewLabel}>Preço</Text><Text style={styles.reviewValue}>R$ {draft.price}</Text></View><View style={styles.reviewLine}><Text style={styles.reviewLabel}>Conteúdo</Text><Text style={styles.reviewValue}>1 módulo · 3 aulas</Text></View><Pressable accessibilityRole="button" accessibilityLabel="Enviar curso para revisão" onPress={() => onSubmit(draft)} style={styles.primary}><Text style={styles.primaryText}>ENVIAR PARA REVISÃO</Text></Pressable></View> : null}
+      {step === 3 ? <View style={styles.panel}><Text style={styles.panelTitle}>Pronto para revisão?</Text><Text style={styles.reviewTitle}>{draft.title}</Text><Text style={styles.panelCopy}>A equipe Only Barber verificará relevância, qualidade de áudio e vídeo e organização. Nenhum conteúdo é publicado automaticamente.</Text><View style={styles.reviewLine}><Text style={styles.reviewLabel}>Preço</Text><Text style={styles.reviewValue}>R$ {draft.price}</Text></View><View style={styles.reviewLine}><Text style={styles.reviewLabel}>Conteúdo</Text><Text style={styles.reviewValue}>1 módulo · 3 aulas</Text></View>{submitError ? <Text accessibilityLiveRegion="polite" style={styles.error}>{submitError}</Text> : null}<Pressable accessibilityRole="button" accessibilityLabel="Enviar curso para revisão" disabled={submitting} onPress={submitForReview} style={[styles.primary, submitting && { opacity: 0.65 }]}><Text style={styles.primaryText}>{submitting ? "SALVANDO..." : "ENVIAR PARA REVISÃO"}</Text></Pressable></View> : null}
     </ScrollView>
   );
 }
