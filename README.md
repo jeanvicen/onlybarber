@@ -4,7 +4,7 @@ Aplicação Expo/React Native para Web, Android e iOS, com API Node/Express e do
 
 ## Abrir a build utilizável no Windows
 
-Clique duas vezes em `INICIAR_ONLY_BARBER.cmd`. O navegador abrirá em `http://127.0.0.1:4173`.
+Após clonar o repositório, clique duas vezes em `INICIAR_ONLY_BARBER.cmd`. No primeiro uso, o inicializador instala as dependências, gera a build e abre `http://127.0.0.1:4173`. Os próximos usos reaproveitam a build existente.
 
 Ou, pelo PowerShell:
 

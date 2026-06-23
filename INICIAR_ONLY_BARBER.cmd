@@ -2,6 +2,8 @@
 cd /d "%~dp0"
 if not exist "apps\mobile\dist\index.html" (
   echo Preparando a build do Only Barber...
+  call node scripts\ensure-dependencies.mjs
+  if errorlevel 1 goto :error
   call npm run build:web
   if errorlevel 1 goto :error
 )
